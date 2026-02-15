@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Secrets and keys
+*.pem
+*.key
+*.ppk
+*.p12
+*.crt
+id_rsa
+id_ed25519
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
+
+# Local model artifacts (can be large / private)
+models/
+tm-small-cnn-model/

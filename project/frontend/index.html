@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ConspiraBERT v2</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="panel panel-input">
+        <p class="eyebrow">ConspiraBERT v2</p>
+        <h1>Conspiracy Framing Analyzer</h1>
+        <p class="subtle">
+          AI-assisted signal detection for conspiratorial framing. Results are probabilistic and must
+          be verified with trusted sources.
+        </p>
+
+        <form id="analyze-form">
+          <label for="input-text">Text to analyze</label>
+          <textarea
+            id="input-text"
+            name="text"
+            placeholder="Paste article, post, or transcript..."
+            required
+          ></textarea>
+
+          <div class="controls-row">
+            <label class="checkbox">
+              <input type="checkbox" id="summarize" checked />
+              <span>Generate summary</span>
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" id="breakdown" checked />
+              <span>Sentence breakdown</span>
+            </label>
+          </div>
+
+          <div class="controls-row">
+            <label for="max-sentences">Max sentences</label>
+            <input type="number" id="max-sentences" min="1" max="200" value="80" />
+          </div>
+
+          <button id="analyze-btn" type="submit">Analyze</button>
+        </form>
+      </section>
+
+      <section class="panel panel-output">
+        <div class="status-row">
+          <span id="model-badge" class="badge">Model: waiting</span>
+          <span id="health-badge" class="badge badge-muted">Status: idle</span>
+        </div>
+
+        <div id="loading" class="loading hidden">Running analysis...</div>
+        <div id="error" class="error hidden"></div>
+
+        <div id="results" class="results hidden">
+          <div class="headline-row">
+            <h2 id="overall-label">-</h2>
+            <p id="score">Score: -</p>
+          </div>
+
+          <div class="meter-wrap">
+            <div class="meter-track">
+              <div id="meter-fill" class="meter-fill"></div>
+            </div>
+            <p id="confidence">Confidence: -</p>
+          </div>
+
+          <article class="summary-card">
+            <h3>Summary</h3>
+            <p id="summary-text">-</p>
+          </article>
+
+          <article>
+            <h3>Signals</h3>
+            <div id="signals" class="chips"></div>
+          </article>
+
+          <article>
+            <h3>Sentence Breakdown</h3>
+            <div id="sentences" class="sentence-list"></div>
+          </article>
+
+          <p id="warning" class="warning hidden"></p>
+          <p id="disclaimer" class="disclaimer"></p>
+        </div>
+      </section>
+    </main>
+
+    <script src="/assets/app.js"></script>
+  </body>
+</html>
