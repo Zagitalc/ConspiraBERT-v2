@@ -30,13 +30,17 @@ ConspiraBERT v2 is a rebuilt conspiracy-framing analyzer focused on modern API d
   - falls back to regex sentence splitting if tokenizer download/lookup fails
 
 ### Frontend
-- Replaced old Bootstrap interface with a minimal single-page frontend.
+- Replaced old Bootstrap interface with a redesigned single-page frontend (still vanilla HTML/CSS/JS; no React/TSX/Tailwind).
 - Added:
-  - confidence meter
-  - sentence-level labels
-  - signal chips
-  - model/provider badge
-  - explicit loading, warning, and error states
+  - dark mode toggle with saved preference
+  - split-pane input/results workflow
+  - sentiment distribution bars + risk level card
+  - evidence heatmap with inline highlighting
+  - clickable sentence breakdown (focuses matched evidence)
+  - sample text picker, character counter, and paste auto-analyze
+  - JSON export for latest analysis
+  - persistent provider/health/version badges
+  - explicit phased loading, retry, warning, and error states
 
 ### Deployment and Tooling
 - Added Docker support (`Dockerfile`, `docker-compose.yml`, `.dockerignore`).

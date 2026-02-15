@@ -73,6 +73,8 @@ class HeuristicProvider:
     }
 
     uncertainty_modals = {"might", "maybe", "possibly", "allegedly", "claims", "rumor", "rumour"}
+    max_summary_chars = 300
+    max_summary_sentences = 3
 
     def _sentence_score(self, sentence: str) -> float:
         lowered = sentence.lower()
@@ -106,7 +108,24 @@ class HeuristicProvider:
 
         top = [s for _, _, s in sorted(ranked, reverse=True)[:limit]]
         ordered = [s for s in sentences if s in set(top)]
-        return " ".join(ordered)
+        return self._shorten_summary(" ".join(ordered))
+
+    def _shorten_summary(self, summary: str) -> str:
+        text = re.sub(r"\s+", " ", (summary or "")).strip()
+        if not text:
+            return ""
+
+        sentence_parts = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
+        if len(sentence_parts) > self.max_summary_sentences:
+            text = " ".join(sentence_parts[: self.max_summary_sentences]).strip()
+
+        if len(text) <= self.max_summary_chars:
+            return text
+
+        clipped = text[: self.max_summary_chars].rsplit(" ", 1)[0].strip()
+        if not clipped:
+            clipped = text[: self.max_summary_chars].strip()
+        return f"{clipped}..."
 
     def analyze(self, request: AnalyzeRequest) -> AnalysisResponse:
         started = time.perf_counter()

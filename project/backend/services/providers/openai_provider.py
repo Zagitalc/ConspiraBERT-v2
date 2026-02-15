@@ -13,6 +13,9 @@ class OpenAIProviderError(RuntimeError):
 
 
 class OpenAIProvider:
+    max_summary_chars = 300
+    max_summary_sentences = 3
+
     def __init__(self, settings: Settings):
         self.settings = settings
 
@@ -82,6 +85,8 @@ class OpenAIProvider:
         except Exception as exc:
             raise OpenAIProviderError(f"OpenAI response failed schema validation: {exc}") from exc
 
+        if validated.summary:
+            validated.summary = self._shorten_summary(validated.summary)
         return validated
 
     def _build_prompt(self, request: AnalyzeRequest) -> str:
@@ -101,3 +106,22 @@ class OpenAIProvider:
             "Text:\n"
             f"{request.text}"
         )
+
+    def _shorten_summary(self, summary: str) -> str:
+        text = " ".join((summary or "").split())
+        if not text:
+            return ""
+
+        parts = [s.strip() for s in text.replace("\n", " ").split(". ") if s.strip()]
+        if len(parts) > self.max_summary_sentences:
+            text = ". ".join(parts[: self.max_summary_sentences]).strip()
+            if not text.endswith((".", "!", "?")):
+                text += "."
+
+        if len(text) <= self.max_summary_chars:
+            return text
+
+        clipped = text[: self.max_summary_chars].rsplit(" ", 1)[0].strip()
+        if not clipped:
+            clipped = text[: self.max_summary_chars].strip()
+        return f"{clipped}..."

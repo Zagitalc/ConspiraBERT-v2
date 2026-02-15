@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ConspiraBERT v2</title>
+    <title>ConspiraBERT v2.1</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -13,23 +13,47 @@
     <link rel="stylesheet" href="/assets/styles.css" />
   </head>
   <body>
+    <header class="topbar">
+      <div class="brand-wrap">
+        <p class="brand">ConspiraBERT <span>v2.1</span></p>
+      </div>
+      <div class="topbar-actions">
+        <span id="health-badge" class="badge badge-status">SYSTEM CHECKING</span>
+        <span id="model-badge" class="badge">Provider: waiting</span>
+        <span id="version-badge" class="badge badge-muted">Version: -</span>
+        <button id="theme-toggle" class="icon-btn" type="button" aria-label="Toggle dark mode">
+          Dark
+        </button>
+      </div>
+    </header>
+
     <main class="shell">
       <section class="panel panel-input">
-        <p class="eyebrow">ConspiraBERT v2</p>
-        <h1>Conspiracy Framing Analyzer</h1>
+        <h1>Input Analysis</h1>
         <p class="subtle">
-          AI-assisted signal detection for conspiratorial framing. Results are probabilistic and must
-          be verified with trusted sources.
+          Paste your source text. ConspiraBERT analyzes framing signals, uncertainty cues, and evidence
+          patterns.
         </p>
 
-        <form id="analyze-form">
+        <form id="analyze-form" novalidate>
+          <label for="sample-select">Sample text</label>
+          <select id="sample-select" class="input-control">
+            <option value="">Choose an example...</option>
+          </select>
+
           <label for="input-text">Text to analyze</label>
           <textarea
             id="input-text"
             name="text"
             placeholder="Paste article, post, or transcript..."
+            maxlength="120000"
             required
           ></textarea>
+
+          <div class="meta-row">
+            <p id="char-counter" class="subtle stat">0 / 120000 chars</p>
+            <p id="est-time" class="subtle stat">Est. time: < 1s</p>
+          </div>
 
           <div class="controls-row">
             <label class="checkbox">
@@ -43,57 +67,119 @@
           </div>
 
           <div class="controls-row">
+            <label class="checkbox">
+              <input type="checkbox" id="auto-analyze" checked />
+              <span>Auto analyze on paste</span>
+            </label>
             <label for="max-sentences">Max sentences</label>
             <input type="number" id="max-sentences" min="1" max="200" value="80" />
           </div>
 
-          <button id="analyze-btn" type="submit">Analyze</button>
+          <div class="button-row">
+            <button id="clear-btn" class="btn-ghost" type="button">Clear</button>
+            <button id="analyze-btn" type="submit">Analyze Text</button>
+          </div>
         </form>
       </section>
 
       <section class="panel panel-output">
-        <div class="status-row">
-          <span id="model-badge" class="badge">Model: waiting</span>
-          <span id="health-badge" class="badge badge-muted">Status: idle</span>
+        <div class="results-header">
+          <h2>Analysis Results</h2>
+          <div class="button-row-right">
+            <button id="retry-btn" class="btn-ghost hidden" type="button">Retry</button>
+            <button id="export-json" class="btn-ghost" type="button" disabled>Export JSON</button>
+          </div>
         </div>
 
-        <div id="loading" class="loading hidden">Running analysis...</div>
+        <div id="loading" class="loading hidden">
+          <p id="loading-phase">Submitting...</p>
+        </div>
         <div id="error" class="error hidden"></div>
+        <p id="warning" class="warning hidden"></p>
 
         <div id="results" class="results hidden">
           <div class="headline-row">
-            <h2 id="overall-label">-</h2>
+            <h3 id="overall-label">-</h3>
             <p id="score">Score: -</p>
           </div>
 
-          <div class="meter-wrap">
-            <div class="meter-track">
-              <div id="meter-fill" class="meter-fill"></div>
+          <article class="card">
+            <div class="card-title-row">
+              <h4>Sentiment Distribution</h4>
+              <span id="confidence-range" class="badge badge-muted">Confidence: -</span>
             </div>
-            <p id="confidence">Confidence: -</p>
-          </div>
 
-          <article class="summary-card">
-            <h3>Summary</h3>
+            <div class="bar-row">
+              <div class="bar-label-wrap">
+                <span>Conspiratorial</span>
+                <span id="pct-conspiracy">0%</span>
+              </div>
+              <div class="bar-track"><div id="bar-conspiracy" class="bar-fill bar-high"></div></div>
+            </div>
+
+            <div class="bar-row">
+              <div class="bar-label-wrap">
+                <span>Suspicious</span>
+                <span id="pct-uncertain">0%</span>
+              </div>
+              <div class="bar-track"><div id="bar-uncertain" class="bar-fill bar-med"></div></div>
+            </div>
+
+            <div class="bar-row">
+              <div class="bar-label-wrap">
+                <span>Safe / Neutral</span>
+                <span id="pct-non">0%</span>
+              </div>
+              <div class="bar-track"><div id="bar-non" class="bar-fill bar-low"></div></div>
+            </div>
+            <p id="distribution-note" class="card-note">
+              Distribution is sentence-level. Score is aggregate confidence.
+            </p>
+          </article>
+
+          <article class="card signal-card">
+            <div>
+              <h4>Signals Detected</h4>
+              <p id="trigger-count" class="signal-number">0</p>
+              <p class="signal-caption">Triggers</p>
+            </div>
+            <div>
+              <p id="risk-level" class="risk-level">Low</p>
+              <p class="signal-caption">Risk level</p>
+            </div>
+            <div>
+              <div id="trigger-breakdown" class="chips chips-breakdown"></div>
+              <div id="signals" class="chips"></div>
+            </div>
+          </article>
+
+          <article class="card summary-card">
+            <h4>Summary</h4>
             <p id="summary-text">-</p>
           </article>
 
-          <article>
-            <h3>Signals</h3>
-            <div id="signals" class="chips"></div>
+          <article class="card">
+            <div class="card-title-row">
+              <h4>Evidence Heatmap</h4>
+              <span class="legend">
+                <span class="dot high"></span>High
+                <span class="dot med"></span>Medium
+                <span class="dot low"></span>Low
+              </span>
+            </div>
+            <div id="heatmap" class="heatmap">Run analysis to view evidence mapping.</div>
           </article>
 
-          <article>
-            <h3>Sentence Breakdown</h3>
-            <div id="sentences" class="sentence-list"></div>
+          <article class="card">
+            <h4>Sentence Breakdown</h4>
+            <ol id="sentence-list" class="sentence-list"></ol>
           </article>
 
-          <p id="warning" class="warning hidden"></p>
           <p id="disclaimer" class="disclaimer"></p>
         </div>
       </section>
     </main>
 
-    <script src="/assets/app.js"></script>
+    <script type="module" src="/assets/app.js"></script>
   </body>
 </html>

@@ -4,7 +4,7 @@ dev:
 	uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
 
 test:
-	pytest -q
+	PYTHONPATH=. pytest -q
 
 docker-build:
 	docker build -t conspira-v2:latest .
