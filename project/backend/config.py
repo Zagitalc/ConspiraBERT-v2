@@ -37,8 +37,15 @@ class Settings:
 
 
 def get_settings() -> Settings:
+    timeout_raw = os.getenv("OPENAI_TIMEOUT_SECONDS", os.getenv("REQUEST_TIMEOUT_SECONDS", "25"))
+    try:
+        timeout_value = float(timeout_raw)
+    except ValueError:
+        timeout_value = 25.0
+
     return Settings(
         app_env=os.getenv("APP_ENV", "development"),
         openai_api_key=os.getenv("OPENAI_API_KEY", ""),
         openai_model=os.getenv("OPENAI_MODEL", ""),
+        request_timeout_seconds=max(timeout_value, 5.0),
     )

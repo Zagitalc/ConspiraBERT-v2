@@ -44,25 +44,37 @@ class OpenAIProvider:
         client = OpenAI(api_key=self.settings.openai_api_key)
 
         prompt = self._build_prompt(request)
-        try:
-            completion = client.chat.completions.create(
-                model=self.settings.effective_openai_model,
-                temperature=0,
-                response_format={"type": "json_object"},
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are a conspiracy-framing detector. Classify framing, not sentiment. "
-                            "Return strict JSON only."
-                        ),
-                    },
-                    {"role": "user", "content": prompt},
-                ],
-                timeout=self.settings.request_timeout_seconds,
-            )
-        except Exception as exc:
-            raise OpenAIProviderError(f"OpenAI request failed: {exc}") from exc
+        completion = None
+        last_exc: Exception | None = None
+        for attempt in range(2):
+            timeout_seconds = self.settings.request_timeout_seconds * (1.0 if attempt == 0 else 1.6)
+            try:
+                completion = client.chat.completions.create(
+                    model=self.settings.effective_openai_model,
+                    response_format={"type": "json_object"},
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": (
+                                "You are a conspiracy-framing detector. Classify framing, not sentiment. "
+                                "Return strict JSON only."
+                            ),
+                        },
+                        {"role": "user", "content": prompt},
+                    ],
+                    timeout=timeout_seconds,
+                )
+                break
+            except Exception as exc:
+                last_exc = exc
+                if not self._is_timeout_error(exc) or attempt == 1:
+                    raise OpenAIProviderError(f"OpenAI request failed: {exc}") from exc
+
+        if completion is None:
+            raise OpenAIProviderError(
+                "OpenAI request timed out after retry. "
+                "Increase OPENAI_TIMEOUT_SECONDS or reduce input size."
+            ) from last_exc
 
         content = completion.choices[0].message.content if completion.choices else None
         if not content:
@@ -73,6 +85,7 @@ class OpenAIProvider:
         except json.JSONDecodeError as exc:
             raise OpenAIProviderError("OpenAI returned non-JSON content.") from exc
 
+        payload = self._normalize_payload(payload)
         latency_ms = int((time.perf_counter() - started) * 1000)
         payload["model_info"] = ModelInfo(
             provider="openai",
@@ -125,3 +138,33 @@ class OpenAIProvider:
         if not clipped:
             clipped = text[: self.max_summary_chars].strip()
         return f"{clipped}..."
+
+    def _is_timeout_error(self, exc: Exception) -> bool:
+        message = str(exc).lower()
+        return ("timed out" in message) or ("timeout" in message)
+
+    def _normalize_payload(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        normalized = dict(payload or {})
+        signals = normalized.get("signals")
+        if not isinstance(signals, list):
+            return normalized
+
+        fixed_signals = []
+        for item in signals:
+            if not isinstance(item, dict):
+                continue
+
+            signal = dict(item)
+            evidence = signal.get("evidence")
+            if isinstance(evidence, list):
+                fragments = [str(part).strip() for part in evidence if str(part).strip()]
+                signal["evidence"] = "; ".join(fragments)
+            elif evidence is None:
+                signal["evidence"] = ""
+            elif not isinstance(evidence, str):
+                signal["evidence"] = str(evidence)
+
+            fixed_signals.append(signal)
+
+        normalized["signals"] = fixed_signals
+        return normalized
